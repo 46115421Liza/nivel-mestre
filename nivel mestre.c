@@ -197,4 +197,5 @@ int main() {
     executarWar();
     printf("\nFim do jogo.\n");
     return 0;
-}
+}t add .
+git
