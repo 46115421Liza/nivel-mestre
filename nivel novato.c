@@ -3,17 +3,19 @@
 #include <string.h>
 #include <time.h>
 
-// -----------------------------
-// Estrutura para Território (WAR)
-// -----------------------------
+// =========================
+// ESTRUTURA DE TERRITÓRIOS
+// =========================
 typedef struct {
     char nome[30];
     char cor[10];
     int tropas;
 } Territorio;
 
-// Função para cadastrar territórios
-void cadastrarTerritorios(Territorio *mapa, int n) {
+// =========================
+// MÓDULO DE CADASTRO
+// =========================
+void cadastrarTerritorios(Territorio* mapa, int n) {
     for (int i = 0; i < n; i++) {
         printf("\n=== Cadastro do Território %d ===\n", i + 1);
         printf("Nome: ");
@@ -25,8 +27,7 @@ void cadastrarTerritorios(Territorio *mapa, int n) {
     }
 }
 
-// Função para exibir territórios
-void exibirTerritorios(Territorio *mapa, int n) {
+void exibirMapa(Territorio* mapa, int n) {
     printf("\n=== Estado Atual do Mapa ===\n");
     for (int i = 0; i < n; i++) {
         printf("%d - %s | Cor: %s | Tropas: %d\n",
@@ -34,10 +35,16 @@ void exibirTerritorios(Territorio *mapa, int n) {
     }
 }
 
-// Função de ataque
-void atacar(Territorio *atacante, Territorio *defensor) {
+// =========================
+// MÓDULO DE ATAQUE
+// =========================
+void atacar(Territorio* atacante, Territorio* defensor) {
     if (strcmp(atacante->cor, defensor->cor) == 0) {
-        printf("\n❌ Um território não pode atacar outro do mesmo exército!\n");
+        printf("\n❌ Não é permitido atacar território do mesmo exército!\n");
+        return;
+    }
+    if (atacante->tropas <= 1) {
+        printf("\n❌ O atacante precisa ter mais de 1 tropa!\n");
         return;
     }
 
@@ -50,129 +57,144 @@ void atacar(Territorio *atacante, Territorio *defensor) {
 
     if (dadoAtacante > dadoDefensor) {
         printf("✅ %s conquistou %s!\n", atacante->nome, defensor->nome);
+        int transfer = atacante->tropas / 2;
+        if (transfer < 1) transfer = 1;
         strcpy(defensor->cor, atacante->cor);
-        defensor->tropas = atacante->tropas / 2;
-        atacante->tropas -= defensor->tropas;
+        defensor->tropas = transfer;
+        atacante->tropas -= transfer;
     } else {
-        printf("❌ O ataque falhou! %s perdeu 1 tropa.\n", atacante->nome);
+        printf("❌ Ataque falhou! %s perdeu 1 tropa.\n", atacante->nome);
         atacante->tropas--;
         if (atacante->tropas < 0) atacante->tropas = 0;
     }
 }
 
-// Função para liberar memória
-void liberarMemoria(Territorio *mapa) {
+// =========================
+// MÓDULO DE MISSÕES ESTRATÉGICAS
+// =========================
+void atribuirMissao(char* destino, char* missoes[], int totalMissoes) {
+    int idx = rand() % totalMissoes;
+    strcpy(destino, missoes[idx]);
+}
+
+void exibirMissao(char* missao) {
+    printf("\n🎯 Sua missão estratégica: %s\n", missao);
+}
+
+int verificarMissao(char* missao, Territorio* mapa, int n) {
+    // Exemplo inicial: verifica por cores específicas
+    if (strstr(missao, "Verde")) {
+        for (int i = 0; i < n; i++)
+            if (strcmp(mapa[i].cor, "Verde") == 0) return 0;
+        return 1;
+    }
+    if (strstr(missao, "Vermelho")) {
+        for (int i = 0; i < n; i++)
+            if (strcmp(mapa[i].cor, "Vermelho") == 0) return 0;
+        return 1;
+    }
+    if (strstr(missao, "Azul")) {
+        for (int i = 0; i < n; i++)
+            if (strcmp(mapa[i].cor, "Azul") == 0) return 0;
+        return 1;
+    }
+    if (strstr(missao, "Amarelo")) {
+        for (int i = 0; i < n; i++)
+            if (strcmp(mapa[i].cor, "Amarelo") == 0) return 0;
+        return 1;
+    }
+    if (strstr(missao, "Branco")) {
+        for (int i = 0; i < n; i++)
+            if (strcmp(mapa[i].cor, "Branco") == 0) return 0;
+        return 1;
+    }
+    return 0; // Missão ainda não cumprida
+}
+
+// =========================
+// MÓDULO DE MEMÓRIA
+// =========================
+void liberarMemoria(Territorio* mapa, char* missao) {
+    free(missao);
     free(mapa);
 }
 
-// -----------------------------
-// Algoritmo da Mochila (Knapsack)
-// -----------------------------
-int max(int a, int b) {
-    return (a > b) ? a : b;
-}
+// =========================
+// EXECUÇÃO DO JOGO WAR
+// =========================
+void executarWar() {
+    srand((unsigned int)time(NULL));
 
-void executarMochila() {
-    int n, W;
-
-    printf("\n=== Problema da Mochila ===\n");
-    printf("Digite o número de itens: ");
+    int n;
+    printf("Digite o número de territórios: ");
     scanf("%d", &n);
-    printf("Digite a capacidade da mochila: ");
-    scanf("%d", &W);
 
-    int *peso = (int *) malloc(n * sizeof(int));
-    int *valor = (int *) malloc(n * sizeof(int));
-
-    printf("\nDigite os pesos dos itens:\n");
-    for (int i = 0; i < n; i++) {
-        scanf("%d", &peso[i]);
+    Territorio* mapa = (Territorio*) calloc(n, sizeof(Territorio));
+    if (!mapa) {
+        printf("Erro ao alocar memória para territórios.\n");
+        return;
     }
 
-    printf("Digite os valores dos itens:\n");
-    for (int i = 0; i < n; i++) {
-        scanf("%d", &valor[i]);
-    }
+    cadastrarTerritorios(mapa, n);
 
-    // Criação da matriz DP
-    int **dp = (int **) calloc(n + 1, sizeof(int *));
-    for (int i = 0; i <= n; i++) {
-        dp[i] = (int *) calloc(W + 1, sizeof(int));
-    }
+    // Criação do vetor de missões
+    char* missoes[] = {
+        "Eliminar todas as tropas da cor Verde",
+        "Eliminar todas as tropas da cor Vermelho",
+        "Eliminar todas as tropas da cor Azul",
+        "Eliminar todas as tropas da cor Amarelo",
+        "Eliminar todas as tropas da cor Branco"
+    };
+    int totalMissoes = sizeof(missoes) / sizeof(missoes[0]);
 
-    // Programação dinâmica
-    for (int i = 1; i <= n; i++) {
-        for (int w = 1; w <= W; w++) {
-            if (peso[i - 1] <= w) {
-                dp[i][w] = max(valor[i - 1] + dp[i - 1][w - peso[i - 1]], dp[i - 1][w]);
-            } else {
-                dp[i][w] = dp[i - 1][w];
-            }
-        }
-    }
+    char* missao = (char*) malloc(100 * sizeof(char));
+    if (!missao) { liberarMemoria(mapa, NULL); return; }
 
-    printf("\nValor máximo que pode ser carregado: %d\n", dp[n][W]);
-
-    // Liberação da memória
-    for (int i = 0; i <= n; i++) {
-        free(dp[i]);
-    }
-    free(dp);
-    free(peso);
-    free(valor);
-}
-
-// -----------------------------
-// Função Principal
-// -----------------------------
-int main() {
-    srand(time(NULL));
+    atribuirMissao(missao, missoes, totalMissoes);
+    exibirMissao(missao);
 
     int opcao;
     do {
-        printf("\n=== MENU PRINCIPAL ===\n");
-        printf("1 - Cadastrar e atacar territórios (WAR)\n");
-        printf("2 - Resolver problema da mochila\n");
+        exibirMapa(mapa, n);
+
+        printf("\n--- MENU DE AÇÕES ---\n");
+        printf("1 - Atacar\n");
+        printf("2 - Verificar missão\n");
         printf("0 - Sair\n");
-        printf("Escolha uma opção: ");
+        printf("Escolha sua ação: ");
         scanf("%d", &opcao);
 
         if (opcao == 1) {
-            int n;
-            printf("\nQuantos territórios deseja cadastrar? ");
-            scanf("%d", &n);
+            int at, def;
+            printf("Índice do território atacante: ");
+            scanf("%d", &at);
+            printf("Índice do território defensor: ");
+            scanf("%d", &def);
 
-            Territorio *mapa = (Territorio *) calloc(n, sizeof(Territorio));
-            cadastrarTerritorios(mapa, n);
-
-            int continuar = 1;
-            while (continuar) {
-                exibirTerritorios(mapa, n);
-
-                int at, def;
-                printf("\nDigite o índice do território atacante: ");
-                scanf("%d", &at);
-                printf("Digite o índice do território defensor: ");
-                scanf("%d", &def);
-
-                if (at >= 0 && at < n && def >= 0 && def < n) {
-                    atacar(&mapa[at], &mapa[def]);
-                } else {
-                    printf("\n❌ Índices inválidos!\n");
-                }
-
-                printf("\nDeseja realizar outro ataque? (1 - Sim / 0 - Não): ");
-                scanf("%d", &continuar);
-            }
-
-            liberarMemoria(mapa);
-
+            if (at >= 0 && at < n && def >= 0 && def < n)
+                atacar(&mapa[at], &mapa[def]);
+            else
+                printf("\n❌ Índices inválidos!\n");
         } else if (opcao == 2) {
-            executarMochila();
+            if (verificarMissao(missao, mapa, n)) {
+                printf("\n🎉 Parabéns! Você cumpriu sua missão: %s\n", missao);
+                break;
+            } else {
+                printf("\n⏳ Missão ainda não cumprida.\n");
+            }
         }
 
     } while (opcao != 0);
 
-    printf("\nPrograma encerrado!\n");
+    liberarMemoria(mapa, missao);
+}
+
+// =========================
+// MAIN
+// =========================
+int main() {
+    printf("=== JOGO WAR COM MISSÃO ESTRATÉGICA ===\n");
+    executarWar();
+    printf("\nFim do jogo.\n");
     return 0;
 }
